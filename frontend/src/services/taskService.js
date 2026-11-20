@@ -9,26 +9,40 @@ const apiClient = axios.create({
 });
 
 export default {
-  // Mengambil semua daftar tugas
   async getTasks() {
     const response = await apiClient.get("/tasks");
     return response.data;
   },
 
-  // Membuat tugas baru
   async createTask(payload) {
     const response = await apiClient.post("/tasks", payload);
     return response.data;
   },
 
-  // Memperbarui data tugas (judul, deskripsi, atau status)
   async updateTask(id, payload) {
     const response = await apiClient.put(`/tasks/${id}`, payload);
     return response.data;
   },
 
-  // Menghapus tugas berdasarkan ID
   async deleteTask(id) {
     await apiClient.delete(`/tasks/${id}`);
+  },
+
+  async getTrashedTasks() {
+    const response = await apiClient.get("/tasks/trash");
+    return response.data;
+  },
+
+  async restoreTask(id) {
+    const response = await apiClient.post(`/tasks/${id}/restore`);
+    return response.data;
+  },
+
+  async permanentDeleteTask(id) {
+    await apiClient.delete(`/tasks/${id}/permanent`);
+  },
+
+  async emptyTrash() {
+    await apiClient.delete("/tasks/trash/empty");
   },
 };

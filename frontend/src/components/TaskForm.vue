@@ -24,7 +24,6 @@ const handleSubmit = async () => {
       description: description.value.trim(),
       status: status.value,
     });
-    // Reset form setelah berhasil ditambahkan
     title.value = "";
     description.value = "";
     status.value = "Todo";
@@ -35,26 +34,29 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <form @submit.prevent="handleSubmit" class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
-    <h2 class="text-base font-semibold text-slate-800 mb-4">Tambah Tugas Baru</h2>
+  <form @submit.prevent="handleSubmit" class="bg-card rounded-lg shadow-xs border border-border p-5 mb-6">
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-sm font-semibold text-card-foreground">Tugas Baru</h2>
+      <span class="text-xs font-mono text-muted-foreground">POST /tasks</span>
+    </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
       <div class="md:col-span-2">
-        <label class="block text-xs font-medium text-slate-600 mb-1"> Judul Tugas <span class="text-rose-500">*</span> </label>
+        <label class="block text-xs font-medium text-muted-foreground mb-1.5"> Judul Tugas <span class="text-destructive">*</span> </label>
         <input
           v-model="title"
           type="text"
-          placeholder="Contoh: Integrasi endpoint REST API..."
-          class="w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+          placeholder="Tulis judul tugas..."
+          class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20 transition"
         />
-        <p v-if="validationError" class="text-xs text-rose-600 mt-1">
+        <p v-if="validationError" class="text-xs text-destructive mt-1">
           {{ validationError }}
         </p>
       </div>
 
       <div>
-        <label class="block text-xs font-medium text-slate-600 mb-1">Status Awal</label>
-        <select v-model="status" class="w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2 text-sm text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+        <label class="block text-xs font-medium text-muted-foreground mb-1.5"> Status Awal </label>
+        <select v-model="status" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20 transition cursor-pointer">
           <option value="Todo">Todo</option>
           <option value="In Progress">In Progress</option>
           <option value="Done">Done</option>
@@ -63,12 +65,12 @@ const handleSubmit = async () => {
     </div>
 
     <div class="mb-4">
-      <label class="block text-xs font-medium text-slate-600 mb-1"> Deskripsi <span class="text-slate-400">(opsional)</span> </label>
+      <label class="block text-xs font-medium text-muted-foreground mb-1.5"> Deskripsi <span class="opacity-70">(opsional)</span> </label>
       <textarea
         v-model="description"
         rows="2"
-        placeholder="Tambahkan detail atau catatan tugas..."
-        class="w-full rounded-lg border border-slate-300 px-3.5 py-2 text-sm text-slate-800 placeholder-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20"
+        placeholder="Tambahkan catatan atau detail pekerjaan..."
+        class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20 transition"
       ></textarea>
     </div>
 
@@ -76,7 +78,7 @@ const handleSubmit = async () => {
       <button
         type="submit"
         :disabled="isSubmitting"
-        class="inline-flex items-center justify-center rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 cursor-pointer transition"
+        class="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground shadow-2xs hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:opacity-50 cursor-pointer transition"
       >
         {{ isSubmitting ? "Menyimpan..." : "+ Tambah Tugas" }}
       </button>

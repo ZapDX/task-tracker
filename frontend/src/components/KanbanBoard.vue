@@ -8,7 +8,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(["update-task", "request-delete"]);
+const emit = defineEmits(["update-task", "request-delete", "open-detail"]);
 
 const columns = [
   { status: "Todo", label: "Todo", dotClass: "bg-slate-400" },
@@ -19,13 +19,40 @@ const columns = [
 const draggedTaskId = ref(null);
 const dragOverColumn = ref(null);
 
-// State inline edit di kartu Kanban
-const editingTaskId = ref(null);
-const editTitle = ref("");
-const editDescription = ref("");
-
 const getTasksByStatus = (status) => {
   return props.tasks.filter((t) => t.status === status);
+};
+
+const getTodayStr = () => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
+
+const isOverdue = (task) => {
+  if (!task.due_date || task.status === "Done") return false;
+  return task.due_date < getTodayStr();
+};
+
+const formatShortDueDate = (dateStr) => {
+  if (!dateStr) return "";
+  const [year, month, day] = dateStr.split("-").map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString("id-ID", {
+    day: "2-digit",
+    month: "short",
+  });
+};
+
+const formatShortDate = (isoString) => {
+  if (!isoString) return "";
+  return new Date(isoString).toLocaleString("id-ID", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 };
 
 const onDragStart = (event, task) => {
@@ -52,35 +79,6 @@ const onDrop = async (targetStatus) => {
   if (!task || task.status === targetStatus) return;
 
   await emit("update-task", id, { status: targetStatus });
-};
-
-const startEdit = (task) => {
-  editingTaskId.value = task.id;
-  editTitle.value = task.title;
-  editDescription.value = task.description || "";
-};
-
-const cancelEdit = () => {
-  editingTaskId.value = null;
-};
-
-const saveEdit = async (id) => {
-  if (!editTitle.value.trim()) return;
-  await emit("update-task", id, {
-    title: editTitle.value.trim(),
-    description: editDescription.value.trim(),
-  });
-  editingTaskId.value = null;
-};
-
-const formatShortDate = (isoString) => {
-  if (!isoString) return "";
-  return new Date(isoString).toLocaleString("id-ID", {
-    day: "2-digit",
-    month: "short",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
 };
 </script>
 
@@ -114,59 +112,52 @@ const formatShortDate = (isoString) => {
         <div
           v-for="task in getTasksByStatus(col.status)"
           :key="task.id"
-          :draggable="editingTaskId !== task.id"
+          draggable="true"
           @dragstart="onDragStart($event, task)"
-          class="rounded-lg border border-border bg-card p-3.5 shadow-2xs hover:shadow-sm transition cursor-grab active:cursor-grabbing"
-          :class="{ 'opacity-50': draggedTaskId === task.id }"
+          @click="emit('open-detail', task)"
+          class="group rounded-lg border bg-card p-3.5 shadow-2xs hover:border-primary/40 hover:shadow-sm transition cursor-pointer"
+          :class="[isOverdue(task) ? 'border-destructive/40' : 'border-border', { 'opacity-50': draggedTaskId === task.id }]"
         >
-          <!-- Mode Normal -->
-          <template v-if="editingTaskId !== task.id">
-            <div class="flex items-start justify-between gap-2 mb-1">
+          <div class="flex items-start justify-between gap-2 mb-1">
+            <div class="flex items-center gap-1.5">
               <span class="text-[11px] font-mono text-muted-foreground">#{{ task.id }}</span>
-              <div class="flex items-center gap-1">
-                <button @click="startEdit(task)" type="button" class="rounded px-1.5 py-0.5 text-[11px] text-muted-foreground hover:bg-muted hover:text-foreground cursor-pointer">Edit</button>
-                <button @click="emit('request-delete', task)" type="button" class="rounded px-1.5 py-0.5 text-[11px] text-destructive hover:bg-destructive/10 cursor-pointer">Hapus</button>
-              </div>
+              <span v-if="isOverdue(task)" class="rounded-sm bg-destructive/10 px-1.5 py-0.5 text-[10px] font-semibold text-destructive"> Overdue </span>
             </div>
 
-            <h4 class="text-sm font-semibold text-card-foreground break-words mb-1" :class="{ 'line-through text-muted-foreground': task.status === 'Done' }">
-              {{ task.title }}
-            </h4>
+            <button @click.stop="emit('request-delete', task)" type="button" class="rounded px-1.5 py-0.5 text-[11px] text-destructive hover:bg-destructive/10 cursor-pointer">Hapus</button>
+          </div>
 
-            <p v-if="task.description" class="text-xs text-muted-foreground line-clamp-3 whitespace-pre-line mb-2.5">
-              {{ task.description }}
-            </p>
+          <h4 class="text-sm font-semibold text-card-foreground group-hover:text-primary transition break-words mb-1" :class="{ 'line-through text-muted-foreground': task.status === 'Done' }">
+            {{ task.title }}
+          </h4>
 
-            <div v-if="task.status === 'Done' && task.completed_at" class="mb-2.5 inline-block rounded-sm bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">✓ Selesai: {{ formatShortDate(task.completed_at) }}</div>
+          <p v-if="task.description" class="text-xs text-muted-foreground line-clamp-2 whitespace-pre-line mb-2.5">
+            {{ task.description }}
+          </p>
 
-            <div class="flex items-center justify-between pt-2 border-t border-border/60">
-              <span class="text-[11px] text-muted-foreground">
-                {{ formatShortDate(task.created_at) }}
-              </span>
-              <select
-                :value="task.status"
-                @change="emit('update-task', task.id, { status: $event.target.value })"
-                aria-label="Pindah status"
-                class="rounded border border-input bg-muted px-1.5 py-0.5 text-[11px] text-foreground cursor-pointer"
-              >
-                <option value="Todo">Todo</option>
-                <option value="In Progress">In Progress</option>
-                <option value="Done">Done</option>
-              </select>
-            </div>
-          </template>
+          <div class="flex flex-wrap gap-1.5 mb-2.5">
+            <span v-if="task.due_date" class="inline-block rounded-sm px-2 py-0.5 text-[11px] font-medium" :class="isOverdue(task) ? 'bg-destructive/10 text-destructive' : 'bg-secondary text-secondary-foreground'">
+              Due: {{ formatShortDueDate(task.due_date) }}
+            </span>
 
-          <!-- Mode Inline Edit -->
-          <template v-else>
-            <div class="space-y-2">
-              <input v-model="editTitle" type="text" class="w-full rounded border border-input bg-background px-2.5 py-1 text-xs font-medium text-foreground focus:border-primary focus:outline-none" />
-              <textarea v-model="editDescription" rows="2" class="w-full rounded border border-input bg-background px-2.5 py-1 text-xs text-foreground focus:border-primary focus:outline-none"></textarea>
-              <div class="flex justify-end gap-1.5">
-                <button @click="cancelEdit" type="button" class="rounded border border-border bg-secondary px-2.5 py-1 text-[11px] font-medium text-secondary-foreground cursor-pointer">Batal</button>
-                <button @click="saveEdit(task.id)" type="button" class="rounded bg-primary px-2.5 py-1 text-[11px] font-medium text-primary-foreground cursor-pointer">Simpan</button>
-              </div>
-            </div>
-          </template>
+            <span v-if="task.status === 'Done' && task.completed_at" class="inline-block rounded-sm bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700"> Selesai: {{ formatShortDate(task.completed_at) }} </span>
+          </div>
+
+          <div @click.stop class="flex items-center justify-between pt-2 border-t border-border/60">
+            <span class="text-[11px] text-muted-foreground">
+              {{ formatShortDate(task.created_at) }}
+            </span>
+            <select
+              :value="task.status"
+              @change="emit('update-task', task.id, { status: $event.target.value })"
+              aria-label="Pindah status"
+              class="rounded border border-input bg-muted px-1.5 py-0.5 text-[11px] text-foreground cursor-pointer"
+            >
+              <option value="Todo">Todo</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Done">Done</option>
+            </select>
+          </div>
         </div>
       </div>
     </div>

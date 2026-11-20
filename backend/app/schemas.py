@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from enum import Enum
 from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field, computed_field, field_validator
@@ -12,6 +12,7 @@ class TaskCreate(BaseModel):
     title: str = Field(..., min_length=1, max_length=255)
     description: Optional[str] = ""
     status: TaskStatus = TaskStatus.TODO
+    due_date: Optional[date] = None
 
     @field_validator("title")
     @classmethod
@@ -24,6 +25,7 @@ class TaskUpdate(BaseModel):
     title: Optional[str] = Field(None, min_length=1, max_length=255)
     description: Optional[str] = None
     status: Optional[TaskStatus] = None
+    due_date: Optional[date] = None
 
     @field_validator("title")
     @classmethod
@@ -37,6 +39,7 @@ class TaskResponse(BaseModel):
     title: str
     description: Optional[str]
     status: TaskStatus
+    due_date: Optional[date] = None
     created_at: datetime
     completed_at: Optional[datetime] = None
     deleted_at: Optional[datetime] = None

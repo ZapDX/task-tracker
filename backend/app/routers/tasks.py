@@ -53,6 +53,7 @@ def create_task(task_in: schemas.TaskCreate, db: Session = Depends(get_db)):
         title=task_in.title,
         description=task_in.description,
         status=task_in.status.value,
+        due_date=task_in.due_date,
         completed_at=completed_time
     )
     db.add(new_task)
@@ -82,9 +83,11 @@ def update_task(task_id: int, task_in: schemas.TaskUpdate, db: Session = Depends
             detail=f"Tugas dengan ID {task_id} tidak ditemukan"
         )
 
-    update_data = task_in.model_dump(exclude_unset=True, exclude_none=True)
+    update_data = task_in.model_dump(exclude_unset=True)
     for field, value in update_data.items():
-        if field == "status" and value is not None:
+        if field in {"title", "status"} and value is None:
+            continue
+        if field == "status":
             new_status = value.value
             if new_status == schemas.TaskStatus.DONE.value:
                 if task.status != schemas.TaskStatus.DONE.value or task.completed_at is None:
@@ -92,6 +95,8 @@ def update_task(task_id: int, task_in: schemas.TaskUpdate, db: Session = Depends
             else:
                 task.completed_at = None
             task.status = new_status
+        elif field == "description" and value is None:
+            task.description = ""
         else:
             setattr(task, field, value)
 

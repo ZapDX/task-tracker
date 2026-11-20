@@ -6,6 +6,7 @@ const emit = defineEmits(["add-task"]);
 const title = ref("");
 const description = ref("");
 const status = ref("Todo");
+const dueDate = ref("");
 const isSubmitting = ref(false);
 const validationError = ref("");
 
@@ -23,10 +24,12 @@ const handleSubmit = async () => {
       title: title.value.trim(),
       description: description.value.trim(),
       status: status.value,
+      due_date: dueDate.value || null,
     });
     title.value = "";
     description.value = "";
     status.value = "Todo";
+    dueDate.value = "";
   } finally {
     isSubmitting.value = false;
   }
@@ -34,13 +37,13 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <form @submit.prevent="handleSubmit" class="bg-card rounded-lg shadow-xs border border-border p-5 mb-6">
+  <form @submit.prevent="handleSubmit" class="bg-card rounded-lg shadow-2xs border border-border p-5 mb-6">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-sm font-semibold text-card-foreground">Tugas Baru</h2>
       <span class="text-xs font-mono text-muted-foreground">POST /tasks</span>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
       <div class="md:col-span-2">
         <label class="block text-xs font-medium text-muted-foreground mb-1.5"> Judul Tugas <span class="text-destructive">*</span> </label>
         <input
@@ -61,6 +64,11 @@ const handleSubmit = async () => {
           <option value="In Progress">In Progress</option>
           <option value="Done">Done</option>
         </select>
+      </div>
+
+      <div>
+        <label class="block text-xs font-medium text-muted-foreground mb-1.5"> Deadline <span class="opacity-70">(opsional)</span> </label>
+        <input v-model="dueDate" type="date" class="w-full rounded-md border border-input bg-background px-3 py-2 text-sm text-foreground focus:border-primary focus:outline-none focus:ring-2 focus:ring-ring/20 transition cursor-pointer" />
       </div>
     </div>
 

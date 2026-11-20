@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, ref } from "vue";
 import ConfirmModal from "./components/ConfirmModal.vue";
 import KanbanBoard from "./components/KanbanBoard.vue";
 import SidebarNav from "./components/SidebarNav.vue";
+import TaskDetailDrawer from "./components/TaskDetailDrawer.vue";
 import TaskForm from "./components/TaskForm.vue";
 import TaskItem from "./components/TaskItem.vue";
 import ToastNotification from "./components/ToastNotification.vue";
@@ -16,10 +17,14 @@ const isLoadingTrash = ref(false);
 const errorMessage = ref("");
 
 // Navigasi & Mode Tampilan
-const activePage = ref("tasks"); // 'tasks' | 'trash'
-const viewMode = ref("list"); // 'list' | 'board'
+const activePage = ref("tasks");
+const viewMode = ref("list");
 const isSidebarOpenMobile = ref(false);
 const isSidebarOpenDesktop = ref(true);
+
+// Side-Peek Detail Drawer state
+const selectedTaskId = ref(null);
+const selectedTask = computed(() => tasks.value.find((t) => t.id === selectedTaskId.value) || null);
 
 // Filter, Search & Sort states
 const activeFilter = ref("All");
@@ -156,6 +161,9 @@ const handleConfirmModal = async () => {
     if (type === "soft_delete" && task) {
       await taskService.deleteTask(task.id);
       tasks.value = tasks.value.filter((t) => t.id !== task.id);
+      if (selectedTaskId.value === task.id) {
+        selectedTaskId.value = null;
+      }
       await refreshTrash();
       showToast("Tugas dipindahkan ke tong sampah");
     } else if (type === "permanent_delete" && task) {
@@ -209,6 +217,13 @@ const displayedTasks = computed(() => {
       const bDone = b.completed_at ? new Date(b.completed_at).getTime() : 0;
       if (bDone !== aDone) return bDone - aDone;
     }
+    if (sortBy.value === "due_date") {
+      if (a.due_date && b.due_date) {
+        return a.due_date.localeCompare(b.due_date);
+      }
+      if (a.due_date) return -1;
+      if (b.due_date) return 1;
+    }
     return new Date(b.created_at) - new Date(a.created_at);
   });
 
@@ -224,8 +239,13 @@ const taskCounts = computed(() => ({
 
 const handleKeydown = (e) => {
   if (e.key === "Escape") {
-    closeModal();
-    isSidebarOpenMobile.value = false;
+    if (modalState.value.isOpen) {
+      closeModal();
+    } else if (selectedTaskId.value) {
+      selectedTaskId.value = null;
+    } else if (isSidebarOpenMobile.value) {
+      isSidebarOpenMobile.value = false;
+    }
   }
 };
 
@@ -257,27 +277,32 @@ onUnmounted(() => {
 
     <!-- Area Konten Utama -->
     <div class="flex-1 min-w-0 flex flex-col">
-      <!-- Top Bar (Mobile & Desktop Sidebar Toggle) -->
+      <!-- Top Bar -->
       <div class="sticky top-0 z-10 flex items-center justify-between border-b border-border bg-card/95 backdrop-blur-xs px-4 sm:px-8 py-3">
         <div class="flex items-center gap-3">
-          <!-- Tombol Buka Sidebar Mobile -->
           <button
             @click="isSidebarOpenMobile = true"
             type="button"
             class="inline-flex lg:hidden items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted cursor-pointer"
           >
-            <span>☰</span>
+            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+              <line x1="4" x2="20" y1="6" y2="6" />
+              <line x1="4" x2="20" y1="12" y2="12" />
+              <line x1="4" x2="20" y1="18" y2="18" />
+            </svg>
             <span>Menu</span>
           </button>
 
-          <!-- Tombol Toggle Sidebar Desktop -->
           <button
             @click="isSidebarOpenDesktop = !isSidebarOpenDesktop"
             type="button"
-            :title="isSidebarOpenDesktop ? 'Sembunyikan sidebar' : 'Tampilkan sidebar'"
             class="hidden lg:inline-flex items-center gap-1.5 rounded-md border border-border bg-background px-2.5 py-1.5 text-xs font-medium text-foreground hover:bg-muted cursor-pointer"
           >
-            <span>☰</span>
+            <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+              <line x1="4" x2="20" y1="6" y2="6" />
+              <line x1="4" x2="20" y1="12" y2="12" />
+              <line x1="4" x2="20" y1="18" y2="18" />
+            </svg>
             <span>{{ isSidebarOpenDesktop ? "Tutup Sidebar" : "Sidebar" }}</span>
           </button>
 
@@ -298,27 +323,40 @@ onUnmounted(() => {
               {{ activePage === "tasks" ? "Tugas Aktif" : "Tong Sampah" }}
             </h1>
             <p class="text-xs text-muted-foreground mt-0.5">
-              {{ activePage === "tasks" ? "Kelola daftar pekerjaan, pantau progres, dan atur alur kerja." : "Pulihkan tugas yang terhapus atau bersihkan secara permanen." }}
+              {{ activePage === "tasks" ? "Klik kartu tugas untuk membuka panel detail, catatan lengkap, atau mengatur deadline." : "Pulihkan tugas yang terhapus atau bersihkan secara permanen." }}
             </p>
           </div>
 
-          <!-- View Switcher (List vs Board) khusus halaman Tugas Aktif -->
+          <!-- View Switcher (List vs Board) -->
           <div v-if="activePage === 'tasks'" class="inline-flex self-start sm:self-center rounded-md border border-border bg-card p-1 shadow-2xs">
             <button
               @click="handleSwitchViewMode('list')"
               type="button"
-              class="rounded-sm px-3 py-1 text-xs font-medium transition cursor-pointer"
+              class="inline-flex items-center gap-1.5 rounded-sm px-3 py-1 text-xs font-medium transition cursor-pointer"
               :class="viewMode === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'"
             >
-              ☰ List
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round">
+                <line x1="8" x2="21" y1="6" y2="6" />
+                <line x1="8" x2="21" y1="12" y2="12" />
+                <line x1="8" x2="21" y1="18" y2="18" />
+                <line x1="3" x2="3.01" y1="6" y2="6" />
+                <line x1="3" x2="3.01" y1="12" y2="12" />
+                <line x1="3" x2="3.01" y1="18" y2="18" />
+              </svg>
+              <span>List</span>
             </button>
             <button
               @click="handleSwitchViewMode('board')"
               type="button"
-              class="rounded-sm px-3 py-1 text-xs font-medium transition cursor-pointer"
+              class="inline-flex items-center gap-1.5 rounded-sm px-3 py-1 text-xs font-medium transition cursor-pointer"
               :class="viewMode === 'board' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'"
             >
-              ▦ Board
+              <svg class="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                <rect width="18" height="18" x="3" y="3" rx="2" />
+                <path d="M9 3v18" />
+                <path d="M15 3v18" />
+              </svg>
+              <span>Board</span>
             </button>
           </div>
         </header>
@@ -333,7 +371,7 @@ onUnmounted(() => {
         <template v-if="activePage === 'tasks'">
           <TaskForm @add-task="handleAddTask" />
 
-          <!-- Toolbar Filter (Mode List), Search & Sort -->
+          <!-- Toolbar Filter, Search & Sort -->
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
             <div v-if="viewMode === 'list'" class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
               <button
@@ -346,7 +384,7 @@ onUnmounted(() => {
                 {{ filter }} ({{ taskCounts[filter] }})
               </button>
             </div>
-            <div v-else class="text-xs text-muted-foreground">Seret kartu antar kolom untuk mengubah status secara langsung.</div>
+            <div v-else class="text-xs text-muted-foreground">Seret kartu antar kolom untuk mengubah status, atau klik kartu untuk melihat detail.</div>
 
             <div class="flex items-center gap-2">
               <input
@@ -358,6 +396,7 @@ onUnmounted(() => {
               <select v-model="sortBy" aria-label="Urutkan tugas" class="rounded-md border border-input bg-card px-2.5 py-1.5 text-xs text-foreground focus:border-primary focus:outline-none cursor-pointer">
                 <option value="newest">Terbaru</option>
                 <option value="oldest">Terlama</option>
+                <option value="due_date">Deadline Terdekat</option>
                 <option value="completed">Baru Selesai</option>
               </select>
             </div>
@@ -378,18 +417,21 @@ onUnmounted(() => {
             </div>
 
             <div v-else class="space-y-2.5">
-              <TaskItem v-for="task in displayedTasks" :key="task.id" :task="task" @update-task="handleUpdateTask" @request-delete="openSoftDeleteModal" />
+              <TaskItem v-for="task in displayedTasks" :key="task.id" :task="task" @update-task="handleUpdateTask" @request-delete="openSoftDeleteModal" @open-detail="selectedTaskId = $event.id" />
             </div>
           </template>
 
           <!-- Mode Tampilan Kanban Board -->
-          <KanbanBoard v-else :tasks="displayedTasks" @update-task="handleUpdateTask" @request-delete="openSoftDeleteModal" />
+          <KanbanBoard v-else :tasks="displayedTasks" @update-task="handleUpdateTask" @request-delete="openSoftDeleteModal" @open-detail="selectedTaskId = $event.id" />
         </template>
 
         <!-- HALAMAN 2: TONG SAMPAH (RECYCLE BIN) -->
         <TrashView v-else :trashed-tasks="trashedTasks" :is-loading="isLoadingTrash" @restore-task="handleRestoreTask" @request-permanent-delete="openPermanentDeleteModal" @request-empty-trash="openEmptyTrashModal" />
       </main>
     </div>
+
+    <!-- Side-Peek Detail Drawer -->
+    <TaskDetailDrawer :task="selectedTask" @close="selectedTaskId = null" @update-task="handleUpdateTask" @request-delete="openSoftDeleteModal" />
 
     <!-- Modal Konfirmasi -->
     <ConfirmModal :is-open="modalState.isOpen" :title="modalState.title" :message="modalState.message" :confirm-text="modalState.confirmText" :is-processing="isProcessingModal" @confirm="handleConfirmModal" @cancel="closeModal" />

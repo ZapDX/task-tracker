@@ -10,3 +10,5 @@ class Task(Base):
     description = Column(Text, nullable=True, default="")
     status = Column(String(50), nullable=False, default="Todo")
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    completed_at = Column(DateTime(timezone=True), nullable=True, default=None)
+    deleted_at = Column(DateTime(timezone=True), nullable=True, default=None, index=True)

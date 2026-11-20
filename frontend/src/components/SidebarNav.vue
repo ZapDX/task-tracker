@@ -67,7 +67,7 @@ const handleSelectFilter = (filterKey) => {
       <!-- Brand Header -->
       <div class="flex items-center justify-between border-b border-sidebar-border px-4 py-3.5 shrink-0">
         <div class="flex items-center gap-2.5">
-          <div class="flex h-7 w-7 items-center justify-center rounded-md bg-sidebar-primary text-xs font-bold text-sidebar-primary-foreground">TT</div>
+          <div class="flex h-7 w-7 items-center justify-center rounded-md bg-sidebar-primary text-xs font-bold text-sidebar-primary-foreground tracking-tight">TT</div>
           <div>
             <p class="text-sm font-semibold leading-none tracking-tight">Task Tracker</p>
             <p class="text-[11px] text-muted-foreground mt-1">Workspace</p>
@@ -75,20 +75,29 @@ const handleSelectFilter = (filterKey) => {
         </div>
 
         <!-- Tombol Tutup Mobile -->
-        <button @click="emit('close-mobile')" class="rounded-md p-1.5 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-foreground lg:hidden cursor-pointer" aria-label="Tutup sidebar">✕</button>
+        <button @click="emit('close-mobile')" class="rounded-md p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-foreground lg:hidden cursor-pointer transition" aria-label="Tutup sidebar">
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
 
         <!-- Tombol Sembunyikan Sidebar Desktop -->
         <button
           @click="emit('toggle-desktop')"
           title="Sembunyikan sidebar"
-          class="hidden lg:inline-flex rounded-md p-1.5 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-foreground cursor-pointer"
+          class="hidden lg:inline-flex rounded-md p-1.5 text-muted-foreground hover:bg-sidebar-accent hover:text-foreground cursor-pointer transition"
           aria-label="Sembunyikan sidebar"
         >
-          «
+          <svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+            <rect width="18" height="18" x="3" y="3" rx="2" />
+            <path d="M9 3v18" />
+            <path d="m16 15-3-3 3-3" />
+          </svg>
         </button>
       </div>
 
-      <!-- Ringkasan Progres di Bagian Atas (Langsung Terlihat Tanpa Scroll) -->
+      <!-- Ringkasan Progres di Bagian Atas -->
       <div class="border-b border-sidebar-border px-3.5 py-3 shrink-0">
         <div class="rounded-md border border-sidebar-border bg-card p-3 shadow-2xs">
           <div class="flex items-center justify-between text-xs mb-1.5">
@@ -112,8 +121,14 @@ const handleSelectFilter = (filterKey) => {
               class="flex w-full items-center justify-between rounded-md px-2.5 py-2 text-xs font-medium transition cursor-pointer"
               :class="activePage === 'tasks' ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold' : 'text-sidebar-foreground hover:bg-sidebar-accent/60'"
             >
-              <span class="flex items-center gap-2">
-                <span>📋</span>
+              <span class="flex items-center gap-2.5">
+                <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="5" width="6" height="6" rx="1" />
+                  <path d="m3 17 2 2 4-4" />
+                  <path d="M13 6h8" />
+                  <path d="M13 12h8" />
+                  <path d="M13 18h8" />
+                </svg>
                 <span>Tugas Aktif</span>
               </span>
               <span class="rounded-md bg-background px-1.5 py-0.5 text-[11px] font-mono border border-sidebar-border">
@@ -126,8 +141,14 @@ const handleSelectFilter = (filterKey) => {
               class="flex w-full items-center justify-between rounded-md px-2.5 py-2 text-xs font-medium transition cursor-pointer"
               :class="activePage === 'trash' ? 'bg-sidebar-accent text-sidebar-accent-foreground font-semibold' : 'text-sidebar-foreground hover:bg-sidebar-accent/60'"
             >
-              <span class="flex items-center gap-2">
-                <span>🗑️</span>
+              <span class="flex items-center gap-2.5">
+                <svg class="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M3 6h18" />
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
+                  <line x1="10" x2="10" y1="11" y2="17" />
+                  <line x1="14" x2="14" y1="11" y2="17" />
+                </svg>
                 <span>Tong Sampah</span>
               </span>
               <span class="rounded-md px-1.5 py-0.5 text-[11px] font-mono border" :class="trashCount > 0 ? 'bg-destructive/10 text-destructive border-destructive/20' : 'bg-background text-muted-foreground border-sidebar-border'">
@@ -148,7 +169,7 @@ const handleSelectFilter = (filterKey) => {
               class="flex w-full items-center justify-between rounded-md px-2.5 py-1.5 text-xs transition cursor-pointer"
               :class="activePage === 'tasks' && activeFilter === item.key ? 'bg-sidebar-accent/80 text-sidebar-accent-foreground font-medium' : 'text-muted-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'"
             >
-              <span class="flex items-center gap-2">
+              <span class="flex items-center gap-2.5">
                 <span class="h-2 w-2 rounded-full" :class="item.dotClass"></span>
                 <span>{{ item.label }}</span>
               </span>

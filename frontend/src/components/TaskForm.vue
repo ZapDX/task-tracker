@@ -37,7 +37,7 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <form @submit.prevent="handleSubmit" class="bg-card rounded-lg shadow-2xs border border-border p-5 mb-6">
+  <form @submit.prevent="handleSubmit" @keydown.ctrl.enter.prevent="handleSubmit" @keydown.meta.enter.prevent="handleSubmit" class="bg-card rounded-lg shadow-2xs border border-border p-5 mb-6">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-sm font-semibold text-card-foreground">Tugas Baru</h2>
       <span class="text-xs font-mono text-muted-foreground">POST /tasks</span>
@@ -82,11 +82,12 @@ const handleSubmit = async () => {
       ></textarea>
     </div>
 
-    <div class="flex justify-end">
+    <div class="flex items-center justify-between gap-2">
       <button
         type="submit"
         :disabled="isSubmitting"
-        class="inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground shadow-2xs hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:opacity-50 cursor-pointer transition"
+        title="Simpan tugas (Ctrl + Enter)"
+        class="ml-auto inline-flex items-center justify-center rounded-md bg-primary px-4 py-2 text-xs font-medium text-primary-foreground shadow-2xs hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-ring/30 disabled:opacity-50 cursor-pointer transition"
       >
         {{ isSubmitting ? "Menyimpan..." : "+ Tambah Tugas" }}
       </button>

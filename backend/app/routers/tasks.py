@@ -28,7 +28,7 @@ def get_tasks(db: Session = Depends(get_db)):
     return (
         db.query(models.Task)
         .filter(models.Task.deleted_at.is_(None))
-        .order_by(models.Task.created_at.desc())
+        .order_by(models.Task.created_at.desc(), models.Task.id.desc())
         .all()
     )
 
@@ -38,7 +38,7 @@ def get_trashed_tasks(db: Session = Depends(get_db)):
     return (
         db.query(models.Task)
         .filter(models.Task.deleted_at.is_not(None))
-        .order_by(models.Task.deleted_at.desc())
+        .order_by(models.Task.deleted_at.desc(), models.Task.id.desc())
         .all()
     )
 

@@ -30,7 +30,7 @@ const selectedTask = computed(() => tasks.value.find((t) => t.id === selectedTas
 const activeFilter = ref("All");
 const searchQuery = ref("");
 const sortBy = ref("newest");
-const filterOptions = ["All", "Todo", "In Progress", "Done"];
+const filterOptions = ["All", "Todo", "In Progress", "Done", "Overdue"];
 
 // Modal & Toast states
 const modalState = ref({
@@ -51,6 +51,19 @@ const showToast = (message, type = "success") => {
   toastTimeout = setTimeout(() => {
     toast.value = null;
   }, 3000);
+};
+
+const getTodayStr = () => {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+};
+
+const isTaskOverdue = (task) => {
+  if (!task.due_date || task.status === "Done") return false;
+  return task.due_date < getTodayStr();
 };
 
 const fetchAllData = async () => {
@@ -196,11 +209,24 @@ const handleRestoreTask = async (id) => {
   }
 };
 
+const hasActiveFilterOrSearch = computed(() => {
+  return searchQuery.value.trim() !== "" || (viewMode.value === "list" && activeFilter.value !== "All");
+});
+
+const resetFiltersAndSearch = () => {
+  searchQuery.value = "";
+  activeFilter.value = "All";
+};
+
 const displayedTasks = computed(() => {
   let result = [...tasks.value];
 
   if (viewMode.value === "list" && activeFilter.value !== "All") {
-    result = result.filter((task) => task.status === activeFilter.value);
+    if (activeFilter.value === "Overdue") {
+      result = result.filter((task) => isTaskOverdue(task));
+    } else {
+      result = result.filter((task) => task.status === activeFilter.value);
+    }
   }
 
   const keyword = searchQuery.value.trim().toLowerCase();
@@ -235,7 +261,19 @@ const taskCounts = computed(() => ({
   Todo: tasks.value.filter((t) => t.status === "Todo").length,
   "In Progress": tasks.value.filter((t) => t.status === "In Progress").length,
   Done: tasks.value.filter((t) => t.status === "Done").length,
+  Overdue: tasks.value.filter((t) => isTaskOverdue(t)).length,
 }));
+
+const getFilterButtonClass = (filter) => {
+  const isActive = activeFilter.value === filter;
+  if (filter === "Overdue") {
+    if (isActive) return "bg-destructive text-destructive-foreground shadow-2xs";
+    if (taskCounts.value.Overdue > 0) {
+      return "bg-card text-destructive border border-destructive/30 hover:bg-destructive/5";
+    }
+  }
+  return isActive ? "bg-primary text-primary-foreground shadow-2xs" : "bg-card text-muted-foreground border border-border hover:text-foreground";
+};
 
 const handleKeydown = (e) => {
   if (e.key === "Escape") {
@@ -374,19 +412,22 @@ onUnmounted(() => {
           <!-- Toolbar Filter, Search & Sort -->
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
             <div v-if="viewMode === 'list'" class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-              <button
-                v-for="filter in filterOptions"
-                :key="filter"
-                @click="activeFilter = filter"
-                class="px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer whitespace-nowrap"
-                :class="activeFilter === filter ? 'bg-primary text-primary-foreground shadow-2xs' : 'bg-card text-muted-foreground border border-border hover:text-foreground'"
-              >
+              <button v-for="filter in filterOptions" :key="filter" @click="activeFilter = filter" class="px-3 py-1.5 rounded-md text-xs font-medium transition cursor-pointer whitespace-nowrap" :class="getFilterButtonClass(filter)">
                 {{ filter }} ({{ taskCounts[filter] }})
               </button>
             </div>
             <div v-else class="text-xs text-muted-foreground">Seret kartu antar kolom untuk mengubah status, atau klik kartu untuk melihat detail.</div>
 
             <div class="flex items-center gap-2">
+              <button
+                v-if="hasActiveFilterOrSearch"
+                @click="resetFiltersAndSearch"
+                type="button"
+                class="rounded-md border border-border bg-secondary px-2.5 py-1.5 text-xs font-medium text-secondary-foreground hover:bg-muted cursor-pointer transition shrink-0"
+              >
+                Reset
+              </button>
+
               <input
                 v-model="searchQuery"
                 type="search"
